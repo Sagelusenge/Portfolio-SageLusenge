@@ -79,8 +79,8 @@ export const experiences = [
     period: '2026 — Aujourd’hui',
     company: 'LWASIVA_NET',
     location: 'Goma',
-    role: 'Manager & concepteur de la plateforme',
-    description: 'Pilotage d’une solution de fourniture Internet locale et conception de son système de gestion : abonnés, contrats, installations, facturation, paiements et support technique.',
+    role: 'Manager de l’entreprise & concepteur de la plateforme',
+    description: 'En tant que manager de LWASIVA_NET, je pilote les activités d’un fournisseur Internet local à Goma, de la relation client au suivi opérationnel. J’ai également conçu la plateforme métier qui centralise les abonnés, devis, contrats, installations, équipements, facturation, paiements et demandes de support afin d’améliorer la qualité du service et la prise de décision.',
   },
   {
     period: 'Mars — Avril 2026',
