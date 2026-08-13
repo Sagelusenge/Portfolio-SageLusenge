@@ -44,6 +44,21 @@ const feedbackSchema = z.object({
   message: z.string().trim().min(10).max(1200),
 });
 
+const projectSchema = z.object({
+  title: z.string().trim().min(2).max(140),
+  category: z.string().trim().min(2).max(120),
+  description: z.string().trim().min(10).max(2000),
+  stack: z.array(z.string().trim().min(1).max(40)).min(1).max(10),
+  href: z.url().max(500),
+  image_url: z.union([z.url().max(500), z.literal('')]).optional().default(''),
+  tone: z.enum(['cyan', 'violet', 'blue', 'indigo']).default('cyan'),
+  published: z.boolean().default(true),
+});
+
+function mapProject(row) {
+  return { ...row, stack: String(row.stack).split(',').map(item => item.trim()).filter(Boolean), published: Boolean(row.published) };
+}
+
 function requireAdmin(req, res, next) {
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
   const secret = process.env.JWT_SECRET;
@@ -65,6 +80,17 @@ app.get('/api/health', async (_req, res) => {
   } catch {
     res.status(503).json({ status: 'degraded', database: 'unavailable' });
   }
+});
+
+app.post('/api/views', async (req, res) => {
+  const page = typeof req.body?.page === 'string' ? req.body.page.slice(0, 120) : '/';
+  await pool.execute('INSERT INTO site_views (page) VALUES (?)', [page]);
+  res.status(201).json({ counted: true });
+});
+
+app.get('/api/projects', async (_req, res) => {
+  const [rows] = await pool.query('SELECT id, title, category, description, stack, href, image_url AS image, tone, published, created_at FROM portfolio_projects WHERE published = 1 ORDER BY created_at DESC');
+  res.json({ projects: rows.map(mapProject) });
 });
 
 app.post('/api/contact', async (req, res) => {
@@ -160,6 +186,42 @@ app.patch('/api/admin/feedbacks/:id', requireAdmin, async (req, res) => {
 app.delete('/api/admin/feedbacks/:id', requireAdmin, async (req, res) => {
   const [result] = await pool.execute('DELETE FROM feedbacks WHERE id = ?', [Number(req.params.id)]);
   if (!result.affectedRows) return res.status(404).json({ message: 'Avis introuvable.' });
+  res.status(204).end();
+});
+
+app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
+  const [[totals], [daily]] = await Promise.all([
+    pool.query('SELECT COUNT(*) AS total, SUM(viewed_at >= CURDATE()) AS today, SUM(viewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS week FROM site_views'),
+    pool.query('SELECT DATE(viewed_at) AS date, COUNT(*) AS views FROM site_views WHERE viewed_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(viewed_at) ORDER BY date'),
+  ]);
+  res.json({ views: { total: Number(totals[0]?.total || 0), today: Number(totals[0]?.today || 0), week: Number(totals[0]?.week || 0), daily } });
+});
+
+app.get('/api/admin/projects', requireAdmin, async (_req, res) => {
+  const [rows] = await pool.query('SELECT id, title, category, description, stack, href, image_url AS image, tone, published, created_at FROM portfolio_projects ORDER BY created_at DESC');
+  res.json({ projects: rows.map(mapProject) });
+});
+
+app.post('/api/admin/projects', requireAdmin, async (req, res) => {
+  const parsed = projectSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: 'Veuillez vérifier les informations du projet.' });
+  const p = parsed.data;
+  const [result] = await pool.execute('INSERT INTO portfolio_projects (title, category, description, stack, href, image_url, tone, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [p.title, p.category, p.description, p.stack.join(','), p.href, p.image_url || null, p.tone, p.published]);
+  res.status(201).json({ id: result.insertId, message: 'Réalisation ajoutée.' });
+});
+
+app.patch('/api/admin/projects/:id', requireAdmin, async (req, res) => {
+  const parsed = projectSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: 'Veuillez vérifier les informations du projet.' });
+  const p = parsed.data;
+  const [result] = await pool.execute('UPDATE portfolio_projects SET title=?, category=?, description=?, stack=?, href=?, image_url=?, tone=?, published=? WHERE id=?', [p.title, p.category, p.description, p.stack.join(','), p.href, p.image_url || null, p.tone, p.published, Number(req.params.id)]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Réalisation introuvable.' });
+  res.json({ message: 'Réalisation mise à jour.' });
+});
+
+app.delete('/api/admin/projects/:id', requireAdmin, async (req, res) => {
+  const [result] = await pool.execute('DELETE FROM portfolio_projects WHERE id = ?', [Number(req.params.id)]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Réalisation introuvable.' });
   res.status(204).end();
 });
 

@@ -11,11 +11,13 @@ export const skills = [
 
 export const projects = [
   {
-    title: 'LusNet',
+    title: 'LWASIVA_NET',
     category: 'Plateforme métier',
-    description: 'Gestion complète d’un fournisseur Internet : clients, contrats, abonnements, équipements, paiements et support.',
+    description: 'Plateforme complète d’un fournisseur Internet local à Goma : devis, clients, contrats, abonnements, équipements, paiements et support.',
     stack: ['React', 'Express', 'MySQL'],
-    href: 'https://github.com/Sagelusenge/LusNet',
+    href: 'https://lwasivanet.onrender.com/',
+    image: '/projects/lwasiva.png',
+    live: true,
     tone: 'cyan',
     number: '01',
   },
@@ -73,6 +75,13 @@ export const projects = [
 ];
 
 export const experiences = [
+  {
+    period: '2026 — Aujourd’hui',
+    company: 'LWASIVA_NET',
+    location: 'Goma',
+    role: 'Manager & concepteur de la plateforme',
+    description: 'Pilotage d’une solution de fourniture Internet locale et conception de son système de gestion : abonnés, contrats, installations, facturation, paiements et support technique.',
+  },
   {
     period: 'Mars — Avril 2026',
     company: 'Secrétariat Général CBCA',

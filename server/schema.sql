@@ -32,3 +32,25 @@ CREATE TABLE IF NOT EXISTS feedbacks (
   CONSTRAINT chk_feedback_rating CHECK (rating BETWEEN 1 AND 5),
   INDEX idx_feedback_status_created (status, created_at)
 );
+
+CREATE TABLE IF NOT EXISTS site_views (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  page VARCHAR(120) NOT NULL DEFAULT '/',
+  viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_views_date (viewed_at)
+);
+
+CREATE TABLE IF NOT EXISTS portfolio_projects (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(140) NOT NULL,
+  category VARCHAR(120) NOT NULL,
+  description TEXT NOT NULL,
+  stack VARCHAR(500) NOT NULL,
+  href VARCHAR(500) NOT NULL,
+  image_url VARCHAR(500) NULL,
+  tone ENUM('cyan', 'violet', 'blue', 'indigo') NOT NULL DEFAULT 'cyan',
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_projects_published_created (published, created_at)
+);

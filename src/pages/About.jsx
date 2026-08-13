@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, BrainCircuit, Code2, HeartHandshake, Layers3 } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Code2, Database, FileSpreadsheet, HeartHandshake, Layers3, Map, PenTool } from 'lucide-react';
 import { Page, Eyebrow, SectionTitle } from '../components/Page';
 import { skills } from '../data/site';
 import { certifications, education, experiences } from '../data/site';
@@ -18,7 +18,7 @@ export default function About() {
       [Layers3, 'Simplicité', 'Des parcours directs, sans complexité inutile.'],
       [HeartHandshake, 'Collaboration', 'Écouter, expliquer et construire ensemble.'],
     ].map(([Icon, title, text]) => <div className="value-card" key={title}><Icon /><h3>{title}</h3><p>{text}</p></div>)}</div></section>
-    <section className="section-wrap toolkit"><SectionTitle eyebrow="Compétences" title="Ma boîte à outils." /><div className="toolkit-grid">{skills.map(({ name, level, icon: Icon }) => <div className="tool-card" key={name}><Icon /><span><b>{name}</b><em>{level}%</em></span><i><b style={{ width: `${level}%` }} /></i></div>)}</div><div className="software-strip"><span>Autres outils</span><b>Microsoft Office</b><b>QGIS</b><b>Adobe Illustrator</b><b>VS Code</b><b>Collecte de données</b></div></section>
+    <section className="section-wrap toolkit"><SectionTitle eyebrow="Compétences" title="Ma boîte à outils." /><div className="toolkit-grid">{skills.map(({ name, level, icon: Icon }) => <div className="tool-card" key={name}><Icon /><span><b>{name}</b><em>{level}%</em></span><i><b style={{ width: `${level}%` }} /></i></div>)}</div><div className="software-strip"><span>Autres outils</span>{[[FileSpreadsheet,'Microsoft Office'],[Map,'QGIS'],[PenTool,'Adobe Illustrator'],[Code2,'VS Code'],[Database,'Collecte de données']].map(([Icon,label]) => <b key={label}><Icon />{label}</b>)}</div></section>
     <section className="cta section-wrap"><div><Eyebrow>Travaillons ensemble</Eyebrow><h2>Une idée mérite une belle exécution.</h2></div><Link className="button primary" to="/contact">Me contacter <ArrowRight /></Link></section>
   </Page>;
 }

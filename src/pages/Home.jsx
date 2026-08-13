@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Page, Eyebrow, SectionTitle } from '../components/Page';
 import ProjectCard from '../components/ProjectCard';
 import { projects, skills } from '../data/site';
+import TypewriterRole from '../components/TypewriterRole';
 
 const reveal = { initial: { opacity: 0, y: 22 }, animate: { opacity: 1, y: 0 } };
 
@@ -12,8 +13,8 @@ export default function Home() {
     <section className="hero section-wrap">
       <div className="hero-grid" aria-hidden="true" />
       <motion.div className="hero-copy" variants={reveal} initial="initial" animate="animate" transition={{ duration: .6 }}>
-        <Eyebrow>Bonjour, je suis Sage Lusenge</Eyebrow>
-        <h1>Je conçois des produits web <span>qui font avancer.</span></h1>
+        <Eyebrow>Portfolio · Goma, RDC</Eyebrow>
+        <h1 className="typewriter-heading"><span className="hero-name">Bonjour, je suis Sage Lusenge</span><TypewriterRole /></h1>
         <p className="hero-lead">Développeur backend et concepteur de solutions, je crée des applications SaaS autour de Node.js, Express et MySQL, avec des interfaces React rapides et soignées.</p>
         <div className="hero-actions"><Link className="button primary" to="/realisations">Découvrir mes projets <ArrowRight /></Link><a className="button ghost" href="https://github.com/Sagelusenge" target="_blank" rel="noreferrer"><Github /> Voir mon GitHub</a></div>
         <div className="hero-meta"><span><MapPin /> République démocratique du Congo</span><span><i /> Disponible pour collaborer</span></div>

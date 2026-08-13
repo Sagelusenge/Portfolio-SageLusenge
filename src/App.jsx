@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Layout from './components/Layout';
@@ -12,6 +13,13 @@ import Feedback from './pages/Feedback';
 
 export default function App() {
   const location = useLocation();
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin') || location.pathname === '/connexion') return;
+    if (!sessionStorage.getItem('portfolio_view_counted')) {
+      sessionStorage.setItem('portfolio_view_counted', '1');
+      fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: location.pathname }) }).catch(() => sessionStorage.removeItem('portfolio_view_counted'));
+    }
+  }, [location.pathname]);
   return (
     <Layout>
       <AnimatePresence mode="wait">
