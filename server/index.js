@@ -36,6 +36,20 @@ const loginSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+function requireAdmin(req, res, next) {
+  const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
+  const secret = process.env.JWT_SECRET;
+  if (!token || !secret) return res.status(401).json({ message: 'Session invalide ou expirée.' });
+  try {
+    const payload = jwt.verify(token, secret);
+    if (payload.role !== 'admin') return res.status(403).json({ message: 'Accès refusé.' });
+    req.user = payload;
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Session invalide ou expirée.' });
+  }
+}
+
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -81,6 +95,31 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     console.error('Login error:', error.message);
     return res.status(500).json({ message: 'Le service est momentanément indisponible.' });
   }
+});
+
+app.get('/api/admin/messages', requireAdmin, async (req, res) => {
+  const status = ['new', 'read', 'replied', 'archived'].includes(req.query.status) ? req.query.status : null;
+  const [rows] = status
+    ? await pool.execute('SELECT id, name, email, subject, message, status, created_at FROM contact_messages WHERE status = ? ORDER BY created_at DESC', [status])
+    : await pool.query('SELECT id, name, email, subject, message, status, created_at FROM contact_messages ORDER BY created_at DESC');
+  res.json({ messages: rows });
+});
+
+app.patch('/api/admin/messages/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const status = req.body.status;
+  if (!Number.isInteger(id) || !['new', 'read', 'replied', 'archived'].includes(status)) return res.status(400).json({ message: 'Données invalides.' });
+  const [result] = await pool.execute('UPDATE contact_messages SET status = ? WHERE id = ?', [status, id]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Message introuvable.' });
+  res.json({ message: 'Statut mis à jour.' });
+});
+
+app.delete('/api/admin/messages/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Identifiant invalide.' });
+  const [result] = await pool.execute('DELETE FROM contact_messages WHERE id = ?', [id]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Message introuvable.' });
+  res.status(204).end();
 });
 
 app.use(express.static(clientDist));
