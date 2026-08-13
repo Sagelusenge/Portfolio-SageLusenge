@@ -8,6 +8,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
+import Feedback from './pages/Feedback';
 
 export default function App() {
   const location = useLocation();
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/a-propos" element={<About />} />
           <Route path="/realisations" element={<Projects />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/avis" element={<Feedback />} />
           <Route path="/connexion" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />

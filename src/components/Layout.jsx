@@ -6,6 +6,7 @@ const links = [
   ['/', 'Accueil'],
   ['/a-propos', 'À propos'],
   ['/realisations', 'Réalisations'],
+  ['/avis', 'Avis'],
   ['/contact', 'Contact'],
 ];
 
@@ -17,6 +18,7 @@ export default function Layout({ children }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
+  if (location.pathname.startsWith('/admin')) return children;
   return (
     <div className="site-shell">
       <div className="noise" aria-hidden="true" />
@@ -50,7 +52,7 @@ export default function Layout({ children }) {
             <a href="https://www.linkedin.com" target="_blank" rel="noreferrer"><Linkedin size={16} /> LinkedIn</a>
           </div>
         </div>
-        <div className="footer-bottom"><span>© {new Date().getFullYear()} Sage Lusenge</span><span>Conçu avec précision en RDC.</span></div>
+        <div className="footer-bottom"><span>© {new Date().getFullYear()} Sage Lusenge</span></div>
       </footer>
     </div>
   );

@@ -36,6 +36,14 @@ const loginSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const feedbackSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  role: z.string().trim().max(120).optional().default(''),
+  email: z.email().max(190),
+  rating: z.coerce.number().int().min(1).max(5),
+  message: z.string().trim().min(10).max(1200),
+});
+
 function requireAdmin(req, res, next) {
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
   const secret = process.env.JWT_SECRET;
@@ -73,6 +81,19 @@ app.post('/api/contact', async (req, res) => {
     console.error('Contact error:', error.message);
     return res.status(500).json({ message: 'Le service est momentanément indisponible.' });
   }
+});
+
+app.get('/api/feedbacks', async (_req, res) => {
+  const [rows] = await pool.query("SELECT id, name, role, rating, message, created_at FROM feedbacks WHERE status = 'approved' ORDER BY created_at DESC LIMIT 30");
+  res.json({ feedbacks: rows });
+});
+
+app.post('/api/feedbacks', async (req, res) => {
+  const parsed = feedbackSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: 'Veuillez vérifier les informations saisies.' });
+  const { name, role, email, rating, message } = parsed.data;
+  await pool.execute('INSERT INTO feedbacks (name, role, email, rating, message) VALUES (?, ?, ?, ?, ?)', [name, role || null, email.toLowerCase(), rating, message]);
+  res.status(201).json({ message: 'Merci ! Ton avis sera publié après validation.' });
 });
 
 app.post('/api/auth/login', authLimiter, async (req, res) => {
@@ -119,6 +140,26 @@ app.delete('/api/admin/messages/:id', requireAdmin, async (req, res) => {
   if (!Number.isInteger(id)) return res.status(400).json({ message: 'Identifiant invalide.' });
   const [result] = await pool.execute('DELETE FROM contact_messages WHERE id = ?', [id]);
   if (!result.affectedRows) return res.status(404).json({ message: 'Message introuvable.' });
+  res.status(204).end();
+});
+
+app.get('/api/admin/feedbacks', requireAdmin, async (_req, res) => {
+  const [rows] = await pool.query('SELECT id, name, role, email, rating, message, status, created_at FROM feedbacks ORDER BY created_at DESC');
+  res.json({ feedbacks: rows });
+});
+
+app.patch('/api/admin/feedbacks/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const status = req.body.status;
+  if (!Number.isInteger(id) || !['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ message: 'Données invalides.' });
+  const [result] = await pool.execute('UPDATE feedbacks SET status = ? WHERE id = ?', [status, id]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Avis introuvable.' });
+  res.json({ message: 'Avis mis à jour.' });
+});
+
+app.delete('/api/admin/feedbacks/:id', requireAdmin, async (req, res) => {
+  const [result] = await pool.execute('DELETE FROM feedbacks WHERE id = ?', [Number(req.params.id)]);
+  if (!result.affectedRows) return res.status(404).json({ message: 'Avis introuvable.' });
   res.status(204).end();
 });
 

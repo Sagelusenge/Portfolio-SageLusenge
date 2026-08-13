@@ -27,7 +27,13 @@ export default function Home() {
       </motion.div>
     </section>
 
-    <section className="trust-strip"><span>STACK PRINCIPALE</span><b>React</b><b>Node.js</b><b>Express</b><b>MySQL</b><b>Git</b></section>
+    <section className="trust-strip"><span>STACK PRINCIPALE</span>{[
+      ['React','https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg'],
+      ['Node.js','https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg'],
+      ['Express','https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg'],
+      ['MySQL','https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg'],
+      ['Git','https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg'],
+    ].map(([name, icon]) => <b key={name}><img src={icon} alt="" />{name}</b>)}</section>
 
     <section className="section-wrap section-block">
       <SectionTitle eyebrow="Travaux sélectionnés" title="Des projets pensés pour le réel." text="Des plateformes métier aux expériences communautaires, je construis des solutions utiles, maintenables et centrées sur leurs utilisateurs." />
@@ -51,5 +57,6 @@ export default function Home() {
     </section>
 
     <section className="cta section-wrap"><div><Eyebrow>Un projet en tête ?</Eyebrow><h2>Créons quelque chose de remarquable.</h2><p>Parlons de ton idée, de ton objectif et de la meilleure façon de le concrétiser.</p></div><Link className="button primary" to="/contact">Démarrer une discussion <Sparkles /></Link></section>
+    <section className="feedback-invite section-wrap"><div><Eyebrow>Ton avis compte</Eyebrow><h2>Tu connais mon travail ? Partage ton expérience.</h2></div><Link className="button ghost" to="/avis">Donner un feedback <ArrowRight /></Link></section>
   </Page>;
 }

@@ -19,3 +19,16 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_messages_status_created (status, created_at)
 );
+
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  role VARCHAR(120) NULL,
+  email VARCHAR(190) NOT NULL,
+  rating TINYINT UNSIGNED NOT NULL,
+  message TEXT NOT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_feedback_rating CHECK (rating BETWEEN 1 AND 5),
+  INDEX idx_feedback_status_created (status, created_at)
+);

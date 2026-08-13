@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 export function Page({ children, className = '' }) {
   return (
     <motion.div className={`page ${className}`} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: .42 }}>
+      <div className="magic-field" aria-hidden="true"><i /><i /><i /><span /><span /><span /></div>
       {children}
     </motion.div>
   );
