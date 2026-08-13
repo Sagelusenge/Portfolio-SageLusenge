@@ -14,7 +14,7 @@ export default function Home() {
       <motion.div className="hero-copy" variants={reveal} initial="initial" animate="animate" transition={{ duration: .6 }}>
         <Eyebrow>Bonjour, je suis Sage Lusenge</Eyebrow>
         <h1>Je conçois des produits web <span>qui font avancer.</span></h1>
-        <p className="hero-lead">Développeur full-stack passionné par les interfaces React rapides, les API Express fiables et les données MySQL bien structurées.</p>
+        <p className="hero-lead">Développeur backend et concepteur de solutions, je crée des applications SaaS autour de Node.js, Express et MySQL, avec des interfaces React rapides et soignées.</p>
         <div className="hero-actions"><Link className="button primary" to="/realisations">Découvrir mes projets <ArrowRight /></Link><a className="button ghost" href="https://github.com/Sagelusenge" target="_blank" rel="noreferrer"><Github /> Voir mon GitHub</a></div>
         <div className="hero-meta"><span><MapPin /> République démocratique du Congo</span><span><i /> Disponible pour collaborer</span></div>
       </motion.div>

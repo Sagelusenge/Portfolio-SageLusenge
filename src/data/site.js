@@ -47,3 +47,46 @@ export const projects = [
     number: '04',
   },
 ];
+
+export const experiences = [
+  {
+    period: 'Mars — Avril 2026',
+    company: 'Secrétariat Général CBCA',
+    location: 'Goma',
+    role: 'Stagiaire — Communication & digitalisation',
+    description: 'Maintenance informatique, mise en place et gestion de réseaux, communication et digitalisation des processus internes.',
+  },
+  {
+    period: 'Août 2024',
+    company: 'Coopec Bonne Moisson',
+    location: 'Goma',
+    role: 'Stagiaire — Service clientèle & ITC',
+    description: 'Accompagnement de la clientèle et suivi des opérations financières afin de contribuer à la réduction des erreurs et des pertes.',
+  },
+  {
+    period: 'Janvier — Mars 2023',
+    company: 'Learning for Humanity',
+    location: 'Goma',
+    role: 'Consultant informatique',
+    description: 'Assistance informatique, support technique et maintenance des équipements au service des activités éducatives de l’organisation.',
+  },
+  {
+    period: 'Août — Septembre 2022',
+    company: 'Uhuru Design',
+    location: 'Goma',
+    role: 'Stagiaire — Design',
+    description: 'Conception de supports visuels, communication graphique et développement d’une approche créative adaptée aux besoins clients.',
+  },
+];
+
+export const education = [
+  { period: '2023 — 2026', school: 'ISIG — Goma', title: 'BAC+3 en Informatique de Gestion', detail: 'Diplôme obtenu avec mention grande distinction.' },
+  { period: '2017 — 2023', school: 'Institut Majengo — Goma', title: 'Diplôme d’État', detail: 'Études secondaires achevées avec mention satisfaction.' },
+  { period: '2011 — 2017', school: 'E.P. Majengo — Goma', title: 'Certificat de fin d’études primaires', detail: 'Certificat obtenu avec mention distinction.' },
+];
+
+export const certifications = [
+  { year: '2026', title: 'MySQL', provider: 'Udemy — En ligne' },
+  { year: '2024', title: 'Cartographie avec QGIS', provider: 'GET UP — Goma' },
+  { year: '2023', title: 'Conduite automobile', provider: 'Virunga Auto — Goma' },
+];
