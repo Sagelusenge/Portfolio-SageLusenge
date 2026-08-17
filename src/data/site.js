@@ -13,7 +13,7 @@ export const projects = [
   {
     title: 'LWASIVA_NET',
     category: 'Plateforme métier',
-    description: 'Plateforme complète d’un fournisseur Internet local à Goma : devis, clients, contrats, abonnements, équipements, paiements et support.',
+    description: 'LWASIVA_NET est un fournisseur d’accès à Internet basé à Goma, proposant des solutions de connexion fiables aux particuliers et aux entreprises. La plateforme permet de gérer les clients, abonnements, contrats, équipements, paiements, installations et demandes de support technique.',
     stack: ['React', 'Express', 'MySQL'],
     href: 'https://lwasivanet.onrender.com/',
     image: '/projects/lwasiva.png',
