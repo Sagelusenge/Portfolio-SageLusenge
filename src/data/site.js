@@ -76,11 +76,20 @@ export const projects = [
 
 export const experiences = [
   {
+    period: '2026 · Mission de 30 jours',
+    company: 'Programme des Nations Unies pour le développement (PNUD)',
+    location: 'En ligne',
+    role: 'Volontaire en ligne — Campagne de vulgarisation du code numérique',
+    description: 'Sélectionné pour contribuer à la sensibilisation du grand public et à la diffusion des bonnes pratiques liées au numérique. Cette mission de 30 jours s’appuie sur un planning, des outils, des ressources et des points de contact dédiés.',
+    href: 'https://chat.whatsapp.com/CjIkEAKV9F8HvzgcX77ft8?s=cl&p=i&mlu=4&ilr=4',
+    linkLabel: 'Rejoindre le groupe de la campagne',
+  },
+  {
     period: '2026 — Aujourd’hui',
     company: 'LWASIVA_NET',
     location: 'Goma',
     role: 'Manager de l’entreprise & concepteur de la plateforme',
-    description: 'En tant que manager de LWASIVA_NET, je pilote les activités d’un fournisseur Internet local à Goma, de la relation client au suivi opérationnel. J’ai également conçu la plateforme métier qui centralise les abonnés, devis, contrats, installations, équipements, facturation, paiements et demandes de support afin d’améliorer la qualité du service et la prise de décision.',
+    description: 'En tant que manager de LWASIVA_NET, je pilote les activités à Goma, de la relation client au suivi opérationnel. J’ai également conçu la plateforme métier qui centralise les abonnés, devis, contrats, installations, équipements, facturation, paiements et demandes de support afin d’améliorer la qualité du service et la prise de décision.',
   },
   {
     period: 'Mars — Avril 2026',

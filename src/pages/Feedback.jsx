@@ -110,7 +110,6 @@ export default function Feedback() {
             <div className="feedback-empty">
               <MessageCircleHeart />
               <h2>Le premier avis peut être le tien.</h2>
-              <p>Les retours validés apparaîtront dans cet espace.</p>
             </div>
           ) : (
             feedbacks.map((item) => (
