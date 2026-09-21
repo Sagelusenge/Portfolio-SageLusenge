@@ -2,6 +2,7 @@ services:
   - type: web
     runtime: static
     name: portfolio-sage-web
+    autoDeployTrigger: commit
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
@@ -16,6 +17,7 @@ services:
     runtime: node
     name: portfolio-sage-api
     plan: free
+    autoDeployTrigger: commit
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health
