@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Github, Linkedin, Menu, Music2, X, Youtube } from "lucide-react";
+import { Github, Linkedin, Menu, MessageCircle, Music2, X, Youtube } from "lucide-react";
 import InstallPwa from "./InstallPwa";
 
 const links = [
@@ -92,6 +92,9 @@ export default function Layout({ children }) {
             </a>
             <a href="https://www.tiktok.com/@sage_lus" target="_blank" rel="noreferrer">
               <Music2 size={16} /> TikTok
+            </a>
+            <a href="https://wa.me/243980208012" target="_blank" rel="noreferrer">
+              <MessageCircle size={16} /> WhatsApp · 0980208012
             </a>
             <InstallPwa />
           </div>

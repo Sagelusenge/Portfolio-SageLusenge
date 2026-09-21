@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
 import Feedback from './pages/Feedback';
+import { apiUrl } from './lib/api';
 
 export default function App() {
   const location = useLocation();
@@ -17,7 +18,7 @@ export default function App() {
     if (location.pathname.startsWith('/admin') || location.pathname === '/connexion') return;
     if (!sessionStorage.getItem('portfolio_view_counted')) {
       sessionStorage.setItem('portfolio_view_counted', '1');
-      fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: location.pathname }) }).catch(() => sessionStorage.removeItem('portfolio_view_counted'));
+      fetch(apiUrl('/api/views'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: location.pathname }) }).catch(() => sessionStorage.removeItem('portfolio_view_counted'));
     }
   }, [location.pathname]);
   return (

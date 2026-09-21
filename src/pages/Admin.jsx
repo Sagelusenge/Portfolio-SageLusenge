@@ -21,6 +21,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { apiUrl } from "../lib/api";
 
 const messageLabels = {
   new: "Nouveau",
@@ -59,7 +60,7 @@ export default function Admin() {
   const token = sessionStorage.getItem("portfolio_session");
 
   async function api(path, options = {}) {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       ...options,
       headers: {
         "Content-Type": "application/json",

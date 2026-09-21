@@ -1,6 +1,4 @@
-import path from "node:path";
 import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -14,12 +12,14 @@ import "dotenv/config";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.resolve(__dirname, "../dist/client");
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(cors({ origin: allowedOrigins.includes("*") ? true : allowedOrigins }));
 app.use(express.json({ limit: "3mb" }));
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "";
@@ -155,6 +155,10 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ message: "Session invalide ou expirée." });
   }
 }
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "portfolio-api" });
+});
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -480,10 +484,13 @@ app.post("/api/admin/projects/:id/restore", requireAdmin, async (req, res) => {
   res.json({ message: "Réalisation restaurée." });
 });
 
-app.use(express.static(clientDist));
-app.get("/*splat", (_req, res) =>
-  res.sendFile(path.join(clientDist, "index.html")),
-);
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", service: "portfolio-api", health: "/health" });
+});
+
+app.use((_req, res) => {
+  res.status(404).json({ message: "Route API introuvable." });
+});
 
 app.use((error, _req, res, _next) => {
   console.error(error);

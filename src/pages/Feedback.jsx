@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { MessageCircleHeart, Send, Star } from "lucide-react";
 import { Page, Eyebrow } from "../components/Page";
+import { apiUrl } from "../lib/api";
 
 export default function Feedback() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [rating, setRating] = useState(5);
   const [status, setStatus] = useState("");
   useEffect(() => {
-    fetch("/api/feedbacks")
+    fetch(apiUrl("/api/feedbacks"))
       .then((r) => r.json())
       .then((data) => setFeedbacks(data.feedbacks || []))
       .catch(() => {});
@@ -18,7 +19,7 @@ export default function Feedback() {
     const form = event.currentTarget;
     const body = { ...Object.fromEntries(new FormData(form)), rating };
     try {
-      const response = await fetch("/api/feedbacks", {
+      const response = await fetch(apiUrl("/api/feedbacks"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -109,7 +110,6 @@ export default function Feedback() {
             <div className="feedback-empty">
               <MessageCircleHeart />
               <h2>Le premier avis peut être le tien.</h2>
-              <p>Les retours validés apparaîtront dans cet espace.</p>
             </div>
           ) : (
             feedbacks.map((item) => (
