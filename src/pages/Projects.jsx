@@ -3,11 +3,12 @@ import { ChevronLeft, ChevronRight, Github } from 'lucide-react';
 import { Page, Eyebrow } from '../components/Page';
 import ProjectCard from '../components/ProjectCard';
 import { projects } from '../data/site';
+import { apiUrl } from '../lib/api';
 
 export default function Projects() {
   const [remoteProjects, setRemoteProjects] = useState([]);
   const [page, setPage] = useState(1);
-  useEffect(() => { fetch('/api/projects').then(r => r.json()).then(data => setRemoteProjects(data.projects || [])).catch(() => {}); }, []);
+  useEffect(() => { fetch(apiUrl('/api/projects')).then(r => r.json()).then(data => setRemoteProjects(data.projects || [])).catch(() => {}); }, []);
   const allProjects = useMemo(() => [...projects, ...remoteProjects.map((project, index) => ({ ...project, number: String(projects.length + index + 1).padStart(2, '0'), live: !project.href.includes('github.com') }))], [remoteProjects]);
   const pageCount = Math.max(1, Math.ceil(allProjects.length / 6));
   const visibleProjects = allProjects.slice((page - 1) * 6, page * 6);

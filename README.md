@@ -21,6 +21,13 @@ Portfolio professionnel multi-page construit avec React, Express.js et MySQL.
 
 Le site est disponible sur `http://localhost:5173` et l’API sur `http://localhost:3000/api`.
 
-## Production
+## Déploiement Render séparé
 
-`npm run build` génère le frontend dans `dist/client`. `npm start` lance Express, qui sert aussi les pages React compilées.
+Le fichier `render.yaml` crée deux services indépendants :
+
+- `portfolio-sage-web` : site statique React, publié depuis `dist` ;
+- `portfolio-sage-api` : API Node.js, lancée avec `npm start`.
+
+Pour le site statique, `VITE_API_URL` doit contenir l'URL publique de l'API. Pour l'API, renseigner `CLIENT_URL`, les variables `DB_*`, `JWT_SECRET` et, si les notifications sont utilisées, les clés `VAPID_*`.
+
+Le site statique utilise une réécriture de `/*` vers `/index.html` pour préserver les routes React. L'API expose `/health` pour les contrôles Render et `/api/health` pour vérifier la connexion MySQL.
