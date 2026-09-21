@@ -1,5 +1,3 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -12,12 +10,14 @@ import 'dotenv/config';
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.resolve(__dirname, '../dist/client');
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors({ origin: allowedOrigins.includes('*') ? true : allowedOrigins }));
 app.use(express.json({ limit: '20kb' }));
 
 const publicLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 100 });
@@ -34,6 +34,10 @@ const contactSchema = z.object({
 const loginSchema = z.object({
   email: z.email().max(190),
   password: z.string().min(8).max(128),
+});
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'portfolio-api' });
 });
 
 app.get('/api/health', async (_req, res) => {
@@ -83,8 +87,13 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
   }
 });
 
-app.use(express.static(clientDist));
-app.get('/*splat', (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+app.get('/', (_req, res) => {
+  res.json({ status: 'ok', service: 'portfolio-api', documentation: '/api/health' });
+});
+
+app.use((_req, res) => {
+  res.status(404).json({ message: 'Route API introuvable.' });
+});
 
 app.use((error, _req, res, _next) => {
   console.error(error);

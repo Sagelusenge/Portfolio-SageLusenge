@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Github, Mail, MapPin, Send } from 'lucide-react';
 import { Page, Eyebrow } from '../components/Page';
+import { apiUrl } from '../lib/api';
 
 export default function Contact() {
   const [status, setStatus] = useState({ type: '', message: '' });
@@ -9,7 +10,7 @@ export default function Contact() {
     event.preventDefault(); setLoading(true); setStatus({ type: '', message: '' });
     const body = Object.fromEntries(new FormData(event.currentTarget));
     try {
-      const response = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const response = await fetch(apiUrl('/api/contact'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       event.currentTarget.reset(); setStatus({ type: 'success', message: data.message });

@@ -1,4 +1,4 @@
-# Portfolio — Sage Lusenge
+# Portfolio - Sage Lusenge
 
 Portfolio professionnel multi-page construit avec React, Express.js et MySQL.
 
@@ -17,10 +17,39 @@ Portfolio professionnel multi-page construit avec React, Express.js et MySQL.
 3. Installer les dépendances : `npm install`.
 4. Initialiser MySQL : `npm run db:init`.
 5. Renseigner `ADMIN_EMAIL` et `ADMIN_PASSWORD`, puis créer le compte : `npm run db:create-admin`.
-6. Lancer le site et l’API : `npm run dev`.
+6. Lancer le site et l'API : `npm run dev`.
 
-Le site est disponible sur `http://localhost:5173` et l’API sur `http://localhost:3000/api`.
+Le site est disponible sur `http://localhost:5173` et l'API sur `http://localhost:3000/api`.
 
-## Production
+## Déploiement Render recommandé
 
-`npm run build` génère le frontend dans `dist/client`. `npm start` lance Express, qui sert aussi les pages React compilées.
+Le frontend et le backend sont séparés pour que le portfolio public soit servi comme site statique, sans attendre le réveil du serveur Node.
+
+### 1. Web static
+
+- Type : Static Site
+- Build Command : `npm ci && npm run build`
+- Publish Directory : `dist`
+- Variable d'environnement : `VITE_API_URL=https://portfolio-sage-api.onrender.com`
+- Rewrite React Router : `/*` vers `/index.html`
+
+### 2. API Node
+
+- Type : Web Service
+- Build Command : `npm ci`
+- Start Command : `npm start`
+- Health Check Path : `/health`
+- Variables d'environnement :
+  - `CLIENT_URL=https://portfolio-sage-web.onrender.com`
+  - `DB_HOST`
+  - `DB_PORT`
+  - `DB_USER`
+  - `DB_PASSWORD`
+  - `DB_NAME`
+  - `JWT_SECRET`
+
+Le fichier `render.yaml` décrit ces deux services. Après création sur Render, remplace les URLs `portfolio-sage-web.onrender.com` et `portfolio-sage-api.onrender.com` si Render génère d'autres noms.
+
+## Production locale
+
+`npm run build` génère le frontend statique dans `dist`. `npm start` lance uniquement l'API Express.
