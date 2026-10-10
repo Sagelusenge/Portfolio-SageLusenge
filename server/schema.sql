@@ -73,6 +73,22 @@ CREATE TABLE IF NOT EXISTS portfolio_resources (
   INDEX idx_resources_category (category)
 );
 
+CREATE TABLE IF NOT EXISTS portfolio_experiences (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  period VARCHAR(100) NOT NULL,
+  company VARCHAR(160) NOT NULL,
+  location VARCHAR(120) NOT NULL,
+  role VARCHAR(180) NOT NULL,
+  description TEXT NOT NULL,
+  href VARCHAR(500) NULL,
+  link_label VARCHAR(120) NULL,
+  sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_experiences_published_order (published, sort_order, created_at)
+);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   endpoint_hash CHAR(64) NOT NULL UNIQUE,

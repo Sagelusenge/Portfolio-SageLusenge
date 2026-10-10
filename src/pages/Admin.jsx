@@ -4,6 +4,7 @@ import {
   Archive,
   BarChart3,
   Bell,
+  BriefcaseBusiness,
   Check,
   Eye,
   ExternalLink,
@@ -49,6 +50,17 @@ const emptyResource = {
   description: "",
   published: true,
 };
+const emptyExperience = {
+  period: "",
+  company: "",
+  location: "Goma",
+  role: "",
+  description: "",
+  href: "",
+  link_label: "",
+  sort_order: 0,
+  published: true,
+};
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -57,6 +69,7 @@ export default function Admin() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [resources, setResources] = useState([]);
+  const [experiences, setExperiences] = useState([]);
   const [viewStats, setViewStats] = useState({
     total: 0,
     today: 0,
@@ -93,18 +106,20 @@ export default function Admin() {
   async function load() {
     setLoading(true);
     try {
-      const [messageData, feedbackData, projectData, resourceData, statsData] =
+      const [messageData, feedbackData, projectData, resourceData, experienceData, statsData] =
         await Promise.all([
           api("/api/admin/messages"),
           api("/api/admin/feedbacks"),
           api("/api/admin/projects"),
           api("/api/admin/resources"),
+          api("/api/admin/experiences"),
           api("/api/admin/stats"),
         ]);
       setMessages(messageData.messages);
       setFeedbacks(feedbackData.feedbacks);
       setProjects(projectData.projects);
       setResources(resourceData.resources);
+      setExperiences(experienceData.experiences);
       setViewStats(statsData.views);
     } finally {
       setLoading(false);
@@ -122,8 +137,9 @@ export default function Admin() {
       pending: feedbacks.filter((f) => f.status === "pending").length,
       projects: projects.filter((p) => p.published).length,
       resources: resources.filter((resource) => resource.published).length,
+      experiences: experiences.filter((experience) => experience.published).length,
     }),
-    [messages, feedbacks, projects, resources],
+    [messages, feedbacks, projects, resources, experiences],
   );
   async function messageStatus(id, status) {
     await api(`/api/admin/messages/${id}`, {
@@ -192,6 +208,7 @@ export default function Admin() {
     feedbacks: "Feedbacks",
     projects: "Réalisations",
     resources: "Ressources",
+    experiences: "Expériences",
   };
 
   return (
@@ -239,6 +256,12 @@ export default function Admin() {
             onClick={() => select("resources")}
           >
             <FileText /> Ressources
+          </button>
+          <button
+            className={view === "experiences" ? "active" : ""}
+            onClick={() => select("experiences")}
+          >
+            <BriefcaseBusiness /> Expériences
           </button>
         </nav>
         <div className="sidebar-bottom">
@@ -321,6 +344,13 @@ export default function Admin() {
                   api={api}
                 />
               )}
+              {view === "experiences" && (
+                <ExperiencesAdmin
+                  experiences={experiences}
+                  setExperiences={setExperiences}
+                  api={api}
+                />
+              )}
             </>
           )}
         </div>
@@ -373,6 +403,7 @@ function Dashboard({ stats, views, messages, feedbacks, onNavigate, onEnableNoti
     ],
     [FolderKanban, "Réalisations", stats.projects, "Projets publiés", "green"],
     [FileText, "Ressources", stats.resources, "Fichiers publiés", "blue"],
+    [BriefcaseBusiness, "Expériences", stats.experiences, "Éléments publiés", "violet"],
   ];
   return (
     <>
@@ -724,6 +755,192 @@ function ProjectsAdmin({ projects, setProjects, api }) {
               <button type="button" onClick={() => setOpen(false)}>
                 Annuler
               </button>
+              <button className="save-project">Enregistrer</button>
+            </footer>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ExperiencesAdmin({ experiences, setExperiences, api }) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyExperience);
+  const [status, setStatus] = useState("");
+
+  function start(experience) {
+    setEditing(experience?.id || null);
+    setForm(
+      experience
+        ? {
+            period: experience.period,
+            company: experience.company,
+            location: experience.location,
+            role: experience.role,
+            description: experience.description,
+            href: experience.href || "",
+            link_label: experience.link_label || "",
+            sort_order: Number(experience.sort_order) || 0,
+            published: experience.published,
+          }
+        : { ...emptyExperience },
+    );
+    setStatus("");
+    setOpen(true);
+  }
+
+  async function refresh() {
+    const data = await api("/api/admin/experiences");
+    setExperiences(data.experiences);
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setStatus("Enregistrement…");
+    try {
+      await api(
+        editing
+          ? `/api/admin/experiences/${editing}`
+          : "/api/admin/experiences",
+        {
+          method: editing ? "PATCH" : "POST",
+          body: JSON.stringify({ ...form, sort_order: Number(form.sort_order) }),
+        },
+      );
+      await refresh();
+      setOpen(false);
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
+  async function toggle(experience) {
+    const published = !experience.published;
+    await api(`/api/admin/experiences/${experience.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        period: experience.period,
+        company: experience.company,
+        location: experience.location,
+        role: experience.role,
+        description: experience.description,
+        href: experience.href || "",
+        link_label: experience.link_label || "",
+        sort_order: Number(experience.sort_order) || 0,
+        published,
+      }),
+    });
+    setExperiences((items) =>
+      items.map((item) =>
+        item.id === experience.id ? { ...item, published } : item,
+      ),
+    );
+  }
+
+  async function removeExperience(experience) {
+    if (!window.confirm(`Supprimer définitivement l’expérience chez « ${experience.company} » ?`)) return;
+    await api(`/api/admin/experiences/${experience.id}`, { method: "DELETE" });
+    setExperiences((items) => items.filter((item) => item.id !== experience.id));
+  }
+
+  return (
+    <section className="admin-panel content-panel experiences-admin">
+      <header>
+        <div>
+          <h3>Expériences professionnelles</h3>
+          <p>Les expériences publiées apparaissent dans la page À propos</p>
+        </div>
+        <button className="admin-add" onClick={() => start()}>
+          <Plus /> Ajouter
+        </button>
+      </header>
+      {experiences.length === 0 ? (
+        <Empty text="Aucune expérience administrable. Ajoute ta prochaine expérience." />
+      ) : (
+        <div className="admin-experience-list">
+          {experiences.map((experience) => (
+            <article key={experience.id}>
+              <div className="admin-experience-icon"><BriefcaseBusiness /></div>
+              <div className="admin-experience-copy">
+                <span>{experience.period} · {experience.location}</span>
+                <h3>{experience.company}</h3>
+                <p>{experience.role}</p>
+              </div>
+              <em className={experience.published ? "published" : ""}>
+                {experience.published ? "Publié" : "Masqué"}
+              </em>
+              <footer>
+                <button onClick={() => toggle(experience)}>
+                  {experience.published ? "Masquer" : "Publier"}
+                </button>
+                <button onClick={() => start(experience)}>Modifier</button>
+                <button className="danger" onClick={() => removeExperience(experience)}>
+                  <Trash2 /> Supprimer
+                </button>
+              </footer>
+            </article>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div className="project-modal experience-modal">
+          <form onSubmit={submit}>
+            <header>
+              <div>
+                <h2>{editing ? "Modifier l’expérience" : "Nouvelle expérience"}</h2>
+                <p>Décris le poste et ce que tu y as accompli.</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)}><X /></button>
+            </header>
+            <div className="form-grid">
+              <label>
+                Entreprise ou organisation
+                <input required minLength="2" value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} placeholder="Ex. LWASIVA_NET" />
+              </label>
+              <label>
+                Période
+                <input required minLength="2" value={form.period} onChange={(event) => setForm({ ...form, period: event.target.value })} placeholder="Ex. Janvier 2026 — Aujourd’hui" />
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Fonction
+                <input required minLength="2" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} placeholder="Ex. Développeur backend" />
+              </label>
+              <label>
+                Lieu
+                <input required minLength="2" value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} placeholder="Ex. Goma ou En ligne" />
+              </label>
+            </div>
+            <label>
+              Description
+              <textarea required minLength="10" maxLength="2500" rows="5" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Décris tes responsabilités et tes résultats." />
+            </label>
+            <div className="form-grid">
+              <label>
+                Lien externe (facultatif)
+                <input type="url" value={form.href} onChange={(event) => setForm({ ...form, href: event.target.value })} placeholder="https://..." />
+              </label>
+              <label>
+                Texte du lien
+                <input value={form.link_label} onChange={(event) => setForm({ ...form, link_label: event.target.value })} placeholder="Ex. Voir l’organisation" />
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Ordre d’affichage
+                <input type="number" min="0" max="999" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: event.target.value })} />
+              </label>
+              <label className="publish-check">
+                <input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} />
+                Publier immédiatement
+              </label>
+            </div>
+            {status && <p className="form-status">{status}</p>}
+            <footer>
+              <button type="button" onClick={() => setOpen(false)}>Annuler</button>
               <button className="save-project">Enregistrer</button>
             </footer>
           </form>

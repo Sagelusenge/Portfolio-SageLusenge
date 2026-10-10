@@ -90,6 +90,21 @@ const resourceSchema = z.object({
   ),
 });
 
+const experienceSchema = z.object({
+  period: z.string().trim().min(2).max(100),
+  company: z.string().trim().min(2).max(160),
+  location: z.string().trim().min(2).max(120),
+  role: z.string().trim().min(2).max(180),
+  description: z.string().trim().min(10).max(2500),
+  href: z.union([z.url().max(500), z.literal("")]).optional().default(""),
+  link_label: z.string().trim().max(120).optional().default(""),
+  sort_order: z.coerce.number().int().min(0).max(999).default(0),
+  published: z.preprocess(
+    (value) => value === true || value === "true" || value === 1,
+    z.boolean(),
+  ),
+});
+
 const resourceMimeTypes = new Set([
   "application/pdf",
   "application/msword",
@@ -132,6 +147,10 @@ function mapResource(row) {
   };
 }
 
+function mapExperience(row) {
+  return { ...row, published: Boolean(row.published) };
+}
+
 async function ensureRuntimeSchema() {
   await pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -154,6 +173,21 @@ async function ensureRuntimeSchema() {
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_resources_published_created (published, created_at),
     INDEX idx_resources_category (category)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS portfolio_experiences (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    period VARCHAR(100) NOT NULL,
+    company VARCHAR(160) NOT NULL,
+    location VARCHAR(120) NOT NULL,
+    role VARCHAR(180) NOT NULL,
+    description TEXT NOT NULL,
+    href VARCHAR(500) NULL,
+    link_label VARCHAR(120) NULL,
+    sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    published BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_experiences_published_order (published, sort_order, created_at)
   )`);
   const [columns] = await pool.query(
     "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'portfolio_projects'",
@@ -241,6 +275,13 @@ app.get("/api/resources", async (_req, res) => {
     "SELECT id, title, category, description, file_name, mime_type, file_size, published, created_at, updated_at FROM portfolio_resources WHERE published = 1 ORDER BY created_at DESC",
   );
   res.json({ resources: rows.map(mapResource) });
+});
+
+app.get("/api/experiences", async (_req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, period, company, location, role, description, href, link_label, sort_order, published, created_at, updated_at FROM portfolio_experiences WHERE published = 1 ORDER BY sort_order ASC, created_at DESC",
+  );
+  res.json({ experiences: rows.map(mapExperience) });
 });
 
 app.get("/api/resources/:id/file", async (req, res) => {
@@ -568,6 +609,79 @@ app.post("/api/admin/projects/:id/restore", requireAdmin, async (req, res) => {
   if (!result.affectedRows)
     return res.status(404).json({ message: "Réalisation introuvable." });
   res.json({ message: "Réalisation restaurée." });
+});
+
+app.get("/api/admin/experiences", requireAdmin, async (_req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, period, company, location, role, description, href, link_label, sort_order, published, created_at, updated_at FROM portfolio_experiences ORDER BY sort_order ASC, created_at DESC",
+  );
+  res.json({ experiences: rows.map(mapExperience) });
+});
+
+app.post("/api/admin/experiences", requireAdmin, async (req, res) => {
+  const parsed = experienceSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({
+      message: "Veuillez vérifier les informations de l’expérience.",
+    });
+  const experience = parsed.data;
+  const [result] = await pool.execute(
+    "INSERT INTO portfolio_experiences (period, company, location, role, description, href, link_label, sort_order, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [
+      experience.period,
+      experience.company,
+      experience.location,
+      experience.role,
+      experience.description,
+      experience.href || null,
+      experience.link_label || null,
+      experience.sort_order,
+      experience.published,
+    ],
+  );
+  res.status(201).json({
+    id: result.insertId,
+    message: "Expérience ajoutée avec succès.",
+  });
+});
+
+app.patch("/api/admin/experiences/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const parsed = experienceSchema.safeParse(req.body);
+  if (!Number.isInteger(id) || !parsed.success)
+    return res.status(400).json({ message: "Données invalides." });
+  const experience = parsed.data;
+  const [result] = await pool.execute(
+    "UPDATE portfolio_experiences SET period = ?, company = ?, location = ?, role = ?, description = ?, href = ?, link_label = ?, sort_order = ?, published = ? WHERE id = ?",
+    [
+      experience.period,
+      experience.company,
+      experience.location,
+      experience.role,
+      experience.description,
+      experience.href || null,
+      experience.link_label || null,
+      experience.sort_order,
+      experience.published,
+      id,
+    ],
+  );
+  if (!result.affectedRows)
+    return res.status(404).json({ message: "Expérience introuvable." });
+  res.json({ message: "Expérience mise à jour." });
+});
+
+app.delete("/api/admin/experiences/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id))
+    return res.status(400).json({ message: "Identifiant invalide." });
+  const [result] = await pool.execute(
+    "DELETE FROM portfolio_experiences WHERE id = ?",
+    [id],
+  );
+  if (!result.affectedRows)
+    return res.status(404).json({ message: "Expérience introuvable." });
+  res.status(204).end();
 });
 
 app.get("/api/admin/resources", requireAdmin, async (_req, res) => {
