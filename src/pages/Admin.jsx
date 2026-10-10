@@ -6,6 +6,8 @@ import {
   Bell,
   Check,
   Eye,
+  ExternalLink,
+  FileText,
   FolderKanban,
   ImagePlus,
   Inbox,
@@ -19,6 +21,7 @@ import {
   RotateCcw,
   Star,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { apiUrl } from "../lib/api";
@@ -40,6 +43,12 @@ const emptyProject = {
   tone: "cyan",
   published: true,
 };
+const emptyResource = {
+  title: "",
+  category: "Cours",
+  description: "",
+  published: true,
+};
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -47,6 +56,7 @@ export default function Admin() {
   const [messages, setMessages] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [resources, setResources] = useState([]);
   const [viewStats, setViewStats] = useState({
     total: 0,
     today: 0,
@@ -60,13 +70,15 @@ export default function Admin() {
   const token = sessionStorage.getItem("portfolio_session");
 
   async function api(path, options = {}) {
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    };
+    if (!(options.body instanceof FormData))
+      headers["Content-Type"] = "application/json";
     const response = await fetch(apiUrl(path), {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
     });
     if (response.status === 401) {
       sessionStorage.removeItem("portfolio_session");
@@ -81,16 +93,18 @@ export default function Admin() {
   async function load() {
     setLoading(true);
     try {
-      const [messageData, feedbackData, projectData, statsData] =
+      const [messageData, feedbackData, projectData, resourceData, statsData] =
         await Promise.all([
           api("/api/admin/messages"),
           api("/api/admin/feedbacks"),
           api("/api/admin/projects"),
+          api("/api/admin/resources"),
           api("/api/admin/stats"),
         ]);
       setMessages(messageData.messages);
       setFeedbacks(feedbackData.feedbacks);
       setProjects(projectData.projects);
+      setResources(resourceData.resources);
       setViewStats(statsData.views);
     } finally {
       setLoading(false);
@@ -107,8 +121,9 @@ export default function Admin() {
       feedbacks: feedbacks.length,
       pending: feedbacks.filter((f) => f.status === "pending").length,
       projects: projects.filter((p) => p.published).length,
+      resources: resources.filter((resource) => resource.published).length,
     }),
-    [messages, feedbacks, projects],
+    [messages, feedbacks, projects, resources],
   );
   async function messageStatus(id, status) {
     await api(`/api/admin/messages/${id}`, {
@@ -176,6 +191,7 @@ export default function Admin() {
     messages: "Messages",
     feedbacks: "Feedbacks",
     projects: "Réalisations",
+    resources: "Ressources",
   };
 
   return (
@@ -217,6 +233,12 @@ export default function Admin() {
             onClick={() => select("projects")}
           >
             <FolderKanban /> Réalisations
+          </button>
+          <button
+            className={view === "resources" ? "active" : ""}
+            onClick={() => select("resources")}
+          >
+            <FileText /> Ressources
           </button>
         </nav>
         <div className="sidebar-bottom">
@@ -292,6 +314,13 @@ export default function Admin() {
                   api={api}
                 />
               )}
+              {view === "resources" && (
+                <ResourcesAdmin
+                  resources={resources}
+                  setResources={setResources}
+                  api={api}
+                />
+              )}
             </>
           )}
         </div>
@@ -343,6 +372,7 @@ function Dashboard({ stats, views, messages, feedbacks, onNavigate, onEnableNoti
       "violet",
     ],
     [FolderKanban, "Réalisations", stats.projects, "Projets publiés", "green"],
+    [FileText, "Ressources", stats.resources, "Fichiers publiés", "blue"],
   ];
   return (
     <>
@@ -351,8 +381,8 @@ function Dashboard({ stats, views, messages, feedbacks, onNavigate, onEnableNoti
           <span>Vue d’ensemble</span>
           <h2>Bonjour Sage, voici ce qui se passe.</h2>
           <p>
-            Gère ton audience, tes échanges et tes réalisations depuis un seul
-            endroit.
+            Gère ton audience, tes échanges, tes réalisations et tes ressources
+            depuis un seul endroit.
           </p>
           <button className="push-button" onClick={onEnableNotifications}>
             <Bell /> Activer les notifications
@@ -703,6 +733,224 @@ function ProjectsAdmin({ projects, setProjects, api }) {
   );
 }
 
+function ResourcesAdmin({ resources, setResources, api }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyResource);
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  function start() {
+    setForm(emptyResource);
+    setFile(null);
+    setStatus("");
+    setOpen(true);
+  }
+
+  async function refresh() {
+    const data = await api("/api/admin/resources");
+    setResources(data.resources);
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!file) {
+      setStatus("Choisis un fichier PDF, Word, PNG ou JPG.");
+      return;
+    }
+    setUploading(true);
+    setStatus("Envoi du fichier…");
+    const payload = new FormData();
+    payload.append("title", form.title);
+    payload.append("category", form.category);
+    payload.append("description", form.description);
+    payload.append("published", String(form.published));
+    payload.append("file", file);
+    try {
+      await api("/api/admin/resources", { method: "POST", body: payload });
+      await refresh();
+      setOpen(false);
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function toggle(resource) {
+    await api(`/api/admin/resources/${resource.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: resource.title,
+        category: resource.category,
+        description: resource.description || "",
+        published: !resource.published,
+      }),
+    });
+    setResources((items) =>
+      items.map((item) =>
+        item.id === resource.id
+          ? { ...item, published: !item.published }
+          : item,
+      ),
+    );
+  }
+
+  async function removeResource(resource) {
+    if (!window.confirm(`Supprimer définitivement « ${resource.title} » ?`))
+      return;
+    await api(`/api/admin/resources/${resource.id}`, { method: "DELETE" });
+    setResources((items) => items.filter((item) => item.id !== resource.id));
+  }
+
+  return (
+    <section className="admin-panel content-panel resources-admin">
+      <header>
+        <div>
+          <h3>Bibliothèque de ressources</h3>
+          <p>Les fichiers publiés apparaissent immédiatement sur le portfolio</p>
+        </div>
+        <button className="admin-add" onClick={start}>
+          <Plus /> Ajouter
+        </button>
+      </header>
+
+      {resources.length === 0 ? (
+        <Empty text="Aucune ressource. Ajoute ton premier cours ou certificat." />
+      ) : (
+        <div className="admin-resource-list">
+          {resources.map((resource) => (
+            <article key={resource.id}>
+              <div className="admin-resource-icon">
+                <FileText />
+              </div>
+              <div className="admin-resource-copy">
+                <span>{resource.category}</span>
+                <h3>{resource.title}</h3>
+                <p>
+                  {resource.file_name} · {formatFileSize(resource.file_size)}
+                </p>
+              </div>
+              <em className={resource.published ? "published" : ""}>
+                {resource.published ? "Publié" : "Masqué"}
+              </em>
+              <footer>
+                <button onClick={() => toggle(resource)}>
+                  {resource.published ? "Masquer" : "Publier"}
+                </button>
+                {resource.published && (
+                  <a
+                    href={apiUrl(resource.file_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink /> Ouvrir
+                  </a>
+                )}
+                <button
+                  className="danger"
+                  onClick={() => removeResource(resource)}
+                >
+                  <Trash2 /> Supprimer
+                </button>
+              </footer>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="project-modal resource-modal">
+          <form onSubmit={submit}>
+            <header>
+              <div>
+                <h2>Nouvelle ressource</h2>
+                <p>Ajoute un cours, un certificat ou un document à partager.</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)}>
+                <X />
+              </button>
+            </header>
+            <div className="form-grid">
+              <label>
+                Titre
+                <input
+                  required
+                  minLength="2"
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm({ ...form, title: event.target.value })
+                  }
+                  placeholder="Ex. Introduction à MySQL"
+                />
+              </label>
+              <label>
+                Catégorie
+                <select
+                  value={form.category}
+                  onChange={(event) =>
+                    setForm({ ...form, category: event.target.value })
+                  }
+                >
+                  <option>Cours</option>
+                  <option>Certification</option>
+                  <option>Document</option>
+                  <option>Image</option>
+                  <option>Autre</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Description
+              <textarea
+                rows="4"
+                maxLength="1600"
+                value={form.description}
+                onChange={(event) =>
+                  setForm({ ...form, description: event.target.value })
+                }
+                placeholder="Présente brièvement le contenu de cette ressource."
+              />
+            </label>
+            <label className="resource-upload-field">
+              Fichier
+              <span>
+                <Upload /> {file ? file.name : "Choisir un fichier"}
+              </span>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"
+                onChange={(event) => setFile(event.target.files?.[0] || null)}
+                required
+              />
+              <small>PDF, Word, PNG ou JPG · 15 Mo maximum</small>
+            </label>
+            <label className="publish-check">
+              <input
+                type="checkbox"
+                checked={form.published}
+                onChange={(event) =>
+                  setForm({ ...form, published: event.target.checked })
+                }
+              />
+              Publier immédiatement
+            </label>
+            {status && <p className="form-status">{status}</p>}
+            <footer>
+              <button type="button" onClick={() => setOpen(false)}>
+                Annuler
+              </button>
+              <button className="save-project" disabled={uploading}>
+                {uploading ? "Envoi…" : "Ajouter la ressource"}
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Messages({ messages, changeStatus, remove }) {
   return (
     <section className="admin-panel content-panel">
@@ -838,6 +1086,11 @@ function formatDate(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
 function urlBase64ToUint8Array(value) {

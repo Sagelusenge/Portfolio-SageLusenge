@@ -57,6 +57,22 @@ CREATE TABLE IF NOT EXISTS portfolio_projects (
   INDEX idx_projects_published_created (published, created_at)
 );
 
+CREATE TABLE IF NOT EXISTS portfolio_resources (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(160) NOT NULL,
+  category ENUM('Cours', 'Certification', 'Document', 'Image', 'Autre') NOT NULL DEFAULT 'Document',
+  description TEXT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(120) NOT NULL,
+  file_size INT UNSIGNED NOT NULL,
+  file_data LONGBLOB NOT NULL,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_resources_published_created (published, created_at),
+  INDEX idx_resources_category (category)
+);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   endpoint_hash CHAR(64) NOT NULL UNIQUE,

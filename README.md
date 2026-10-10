@@ -7,6 +7,7 @@ Portfolio professionnel multi-page construit avec React, Express.js et MySQL.
 - Accueil
 - À propos
 - Réalisations
+- Ressources publiques alimentées depuis l'administration (PDF, Word et images)
 - Contact avec enregistrement en base
 - Connexion administrateur sécurisée
 

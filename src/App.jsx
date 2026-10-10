@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
 import Feedback from './pages/Feedback';
+import Resources from './pages/Resources';
 import { apiUrl } from './lib/api';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/a-propos" element={<About />} />
           <Route path="/realisations" element={<Projects />} />
+          <Route path="/ressources" element={<Resources />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/avis" element={<Feedback />} />
           <Route path="/connexion" element={<Login />} />

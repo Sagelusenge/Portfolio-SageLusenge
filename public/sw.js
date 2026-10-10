@@ -1,4 +1,4 @@
-const CACHE = 'sage-portfolio-v2';
+const CACHE = 'sage-portfolio-v3';
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));

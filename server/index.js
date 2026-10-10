@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import multer from "multer";
 import webpush from "web-push";
 import { z } from "zod";
 import pool from "./db.js";
@@ -79,6 +80,34 @@ const projectSchema = z.object({
   published: z.boolean().default(true),
 });
 
+const resourceSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  category: z.enum(["Cours", "Certification", "Document", "Image", "Autre"]),
+  description: z.string().trim().max(1600).optional().default(""),
+  published: z.preprocess(
+    (value) => value === true || value === "true" || value === "1",
+    z.boolean(),
+  ),
+});
+
+const resourceMimeTypes = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/png",
+  "image/jpeg",
+]);
+
+const resourceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!resourceMimeTypes.has(file.mimetype))
+      return callback(new Error("RESOURCE_FILE_TYPE"));
+    return callback(null, true);
+  },
+});
+
 function mapProject(row) {
   const project = {
     ...row,
@@ -94,6 +123,15 @@ function mapProject(row) {
   return project;
 }
 
+function mapResource(row) {
+  return {
+    ...row,
+    file_size: Number(row.file_size),
+    published: Boolean(row.published),
+    file_url: `/api/resources/${row.id}/file`,
+  };
+}
+
 async function ensureRuntimeSchema() {
   await pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -101,6 +139,21 @@ async function ensureRuntimeSchema() {
     subscription_json TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS portfolio_resources (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(160) NOT NULL,
+    category ENUM('Cours', 'Certification', 'Document', 'Image', 'Autre') NOT NULL DEFAULT 'Document',
+    description TEXT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(120) NOT NULL,
+    file_size INT UNSIGNED NOT NULL,
+    file_data LONGBLOB NOT NULL,
+    published BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_resources_published_created (published, created_at),
+    INDEX idx_resources_category (category)
   )`);
   const [columns] = await pool.query(
     "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'portfolio_projects'",
@@ -181,6 +234,39 @@ app.get("/api/projects", async (_req, res) => {
     "SELECT id, title, category, description, stack, href, image_url AS image, image_data, tone, published, created_at FROM portfolio_projects WHERE published = 1 AND archived_at IS NULL ORDER BY created_at DESC",
   );
   res.json({ projects: rows.map(mapProject) });
+});
+
+app.get("/api/resources", async (_req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, title, category, description, file_name, mime_type, file_size, published, created_at, updated_at FROM portfolio_resources WHERE published = 1 ORDER BY created_at DESC",
+  );
+  res.json({ resources: rows.map(mapResource) });
+});
+
+app.get("/api/resources/:id/file", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id))
+    return res.status(400).json({ message: "Ressource invalide." });
+  const [rows] = await pool.execute(
+    "SELECT file_name, mime_type, file_data FROM portfolio_resources WHERE id = ? AND published = 1 LIMIT 1",
+    [id],
+  );
+  const resource = rows[0];
+  if (!resource)
+    return res.status(404).json({ message: "Ressource introuvable." });
+  const disposition =
+    resource.mime_type === "application/pdf" ||
+    resource.mime_type.startsWith("image/")
+      ? "inline"
+      : "attachment";
+  res.setHeader("Content-Type", resource.mime_type);
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename*=UTF-8''${encodeURIComponent(resource.file_name)}`,
+  );
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  return res.send(resource.file_data);
 });
 
 app.post("/api/contact", async (req, res) => {
@@ -484,6 +570,78 @@ app.post("/api/admin/projects/:id/restore", requireAdmin, async (req, res) => {
   res.json({ message: "Réalisation restaurée." });
 });
 
+app.get("/api/admin/resources", requireAdmin, async (_req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, title, category, description, file_name, mime_type, file_size, published, created_at, updated_at FROM portfolio_resources ORDER BY created_at DESC",
+  );
+  res.json({ resources: rows.map(mapResource) });
+});
+
+app.post(
+  "/api/admin/resources",
+  requireAdmin,
+  resourceUpload.single("file"),
+  async (req, res) => {
+    const parsed = resourceSchema.safeParse(req.body);
+    if (!parsed.success || !req.file)
+      return res.status(400).json({
+        message: "Ajoutez un fichier valide et vérifiez les informations.",
+      });
+    const resource = parsed.data;
+    const [result] = await pool.execute(
+      "INSERT INTO portfolio_resources (title, category, description, file_name, mime_type, file_size, file_data, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        resource.title,
+        resource.category,
+        resource.description || null,
+        req.file.originalname,
+        req.file.mimetype,
+        req.file.size,
+        req.file.buffer,
+        resource.published,
+      ],
+    );
+    res.status(201).json({
+      id: result.insertId,
+      message: "Ressource ajoutée avec succès.",
+    });
+  },
+);
+
+app.patch("/api/admin/resources/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const parsed = resourceSchema.safeParse(req.body);
+  if (!Number.isInteger(id) || !parsed.success)
+    return res.status(400).json({ message: "Données invalides." });
+  const resource = parsed.data;
+  const [result] = await pool.execute(
+    "UPDATE portfolio_resources SET title = ?, category = ?, description = ?, published = ? WHERE id = ?",
+    [
+      resource.title,
+      resource.category,
+      resource.description || null,
+      resource.published,
+      id,
+    ],
+  );
+  if (!result.affectedRows)
+    return res.status(404).json({ message: "Ressource introuvable." });
+  res.json({ message: "Ressource mise à jour." });
+});
+
+app.delete("/api/admin/resources/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id))
+    return res.status(400).json({ message: "Identifiant invalide." });
+  const [result] = await pool.execute(
+    "DELETE FROM portfolio_resources WHERE id = ?",
+    [id],
+  );
+  if (!result.affectedRows)
+    return res.status(404).json({ message: "Ressource introuvable." });
+  res.status(204).end();
+});
+
 app.get("/", (_req, res) => {
   res.json({ status: "ok", service: "portfolio-api", health: "/health" });
 });
@@ -493,8 +651,18 @@ app.use((_req, res) => {
 });
 
 app.use((error, _req, res, _next) => {
+  if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE")
+    return res
+      .status(413)
+      .json({ message: "Le fichier ne doit pas dépasser 15 Mo." });
+  if (error.message === "RESOURCE_FILE_TYPE")
+    return res.status(415).json({
+      message: "Formats acceptés : PDF, Word, PNG et JPG.",
+    });
   console.error(error);
-  res.status(500).json({ message: "Une erreur inattendue est survenue." });
+  return res
+    .status(500)
+    .json({ message: "Une erreur inattendue est survenue." });
 });
 
 await ensureRuntimeSchema();
